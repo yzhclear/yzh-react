@@ -126,3 +126,23 @@ React Element如果作为核心模块操作的数据结构， 存在的问题：
 ### Reconcile的工作方式
 对于同一个节点， 比较其React Element 与 FiberNode， 生成子 FiberNode。
 并根据比较的结果生成不同标记(插入、删除、移动...)， 对应不同宿主环境API的执行
+
+
+### 如何触发更新
+常见的触发更新的方式:
+* ReactDOM.createRoot().render(或者老版的ReactDOM.render)
+* this.setState
+* useState的dispatch方法
+
+更新机制的组成部分
+* 代表更新的数据结构 -- update
+* 消费update的数据结构 -- UpdateQueue
+
+接下来的工作包括：
+* 实现mount时调用的API
+* 将该API接入上述更新机制中
+
+需要考虑的事情：
+* 更新可能发生于任意组件， 而更新流程是从根节点递归的
+* 需要一个同意的根节点保存通用信息 
+
