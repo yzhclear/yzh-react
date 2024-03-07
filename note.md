@@ -146,3 +146,84 @@ React Element如果作为核心模块操作的数据结构， 存在的问题：
 * 更新可能发生于任意组件， 而更新流程是从根节点递归的
 * 需要一个同意的根节点保存通用信息 
 
+
+## 五.初探mount流程
+更新流程的目的：
+* 生成wip fiberNode树
+* 标记副作用flags
+
+更新流程的步骤：
+* 递： beginWork
+* 归： completeWork
+
+### beginWork
+```
+<A>
+  <B/>
+</A>
+```
+当进入A的beginWork时， 通过对比B current fiberNode 与 B reactElement, 生成B对应的wip fiberNode,
+在此过程中最多会标记2类与 结构变化 相关的 flags
+* Placement
+* ChildDeletion
+
+
+### 实现与Host相关节点的beginWork
+为开发环境增加__DEV__标识
+```
+pnpm i -D -w @rollup/plugin-replace 
+```
+HostRoot的 beginWork 功能流程：
+1. 计算状态的最新值
+2. 创造子FiberNode
+
+### beginWork 优化策略
+考虑如下结构的 reactElement:
+```html
+<div>
+  <p>练习时长</p>
+  <span>两年半</span>
+</div>
+```
+理论上mount流程完毕后包含的flags:
+* 两年半 Placement
+* span  Placement
+* 练习时长  Placement
+* p  Placement
+* div Placement
+
+相比较与执行5次 Placement, 我们可以构建好 离屏DOM树 后， 对 div 执行1次 Placement
+
+**注意**
+上述mount时， 如果不给每个要更新的ReactElement打上 Placement 标记， 那么是不是没有节点有 Placement 标记， 那么是不是无法创建更新呢？
+其实在首屏渲染时， 为一个有 workInProgress 的节点是 HostRootNode, 那么这个FiberNode其实会进入 update流程， 也就是会打上 Placement 标记
+
+### completeWork
+* 对于Host类型的fiberNode, 构建离屏DOM树
+* 标记Update Flag
+
+#### completeWork性能优化策略
+flags分布在不同fiberNode中， 如何快速找到他们？
+答案： 利用completeWork向上遍历(归)的流程， 将子fiberNode的flags冒泡到父fiberNode
+
+## 六. 初探ReactDom
+react内部三个阶段
+* schedule阶段
+* render阶段（beginWork completeWork）
+* commit阶段（commitWork）
+
+### Commit阶段的三个子阶段
+* beforeMutation阶段
+* mutation阶段
+* layout阶段
+
+### 当前commit阶段要执行的任务
+* fiber树的切换
+* 执行Placement对应操作
+
+### 打包ReactDOM
+* 兼容原版React的导出
+* 处理HostConfig的指向
+  * tsconfig.js 修改
+  * 类似 webpack resolve alias的功能， 在rollup中使用
+

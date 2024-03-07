@@ -13,13 +13,13 @@
     "isolatedModules": true,
     "esModuleInterop": true, // 通过导入内容创建命名空间，实现CommonJS和ES模块之间的互操作性
     "noEmit": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noImplicitReturns": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noImplicitReturns": false,
     "skipLibCheck": true,
     "baseUrl": "./packages",// 用于设置解析非相对模块名称的基本目录，相对模块不会受到baseUrl的影响
     "paths": {
-      "hostConfig": ["./react-reconciler/src/hostConfig.ts"]
+      "hostConfig": ["./react-dom/src/hostConfig.ts"]
     }
   },
 }
