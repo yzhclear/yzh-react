@@ -1,8 +1,9 @@
 import { ReactElementType } from 'shared/ReactTypes';
 import { FiberNode } from './fiber';
-import { HostComponent, HostRoot, HostText } from './workTags';
+import { FunctionComponent, HostComponent, HostRoot, HostText } from './workTags';
 import { mountChildFiber, reconcileChildFibers } from './childFibers';
 import { UpdateQueue, processUpdateQueue } from './updateQueue';
+import { renderWithHooks } from './fiberHooks';
 
 // 递归中的递阶段
 export const beginWork = (wip: FiberNode) => {
@@ -11,6 +12,8 @@ export const beginWork = (wip: FiberNode) => {
   switch (wip.tag) {
     case HostRoot:
       return updateHostRoot(wip)
+    case FunctionComponent:
+      return updateFunctionComponent(wip)
     case HostComponent:
       return updateHostComponent(wip)
     case HostText:
@@ -33,6 +36,12 @@ function updateHostRoot(wip: FiberNode) {
   wip.memoizedState = memoizedState
 
   const nextChildren = wip.memoizedState
+  reconcileChildren(wip, nextChildren)
+  return wip.child
+}
+
+function updateFunctionComponent(wip: FiberNode) {
+  const nextChildren = renderWithHooks(wip)
   reconcileChildren(wip, nextChildren)
   return wip.child
 }

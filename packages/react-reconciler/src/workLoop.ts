@@ -26,7 +26,7 @@ function markUpdateFromFiberToRoot(fiber: FiberNode) {
 		parent = node.return;
 	}
 
-	if (node.type === HostRoot) {
+	if (node.tag === HostRoot) {
 		return node.stateNode;
 	}
 
@@ -39,10 +39,11 @@ function renderRoot(root: FiberRootNode) {
 
 	do {
 		try {
-			workLoop(root.current);
+			workLoop();
+      break;
 		} catch (error) {
 			if (__DEV__) {
-				console.warn('workloop发生错误');
+				console.warn('workloop发生错误', error);
 			}
 			workInprogress = null;
 		}
@@ -85,7 +86,7 @@ function commitRoot(root: FiberRootNode) {
 	}
 }
 
-function workLoop(fiber: FiberNode) {
+function workLoop() {
 	while (workInprogress !== null) {
 		performUnitOfWork(workInprogress);
 	}
@@ -106,7 +107,7 @@ function completeUnitOfWork(fiber: FiberNode) {
 	let node: FiberNode | null = fiber;
 
 	do {
-		completeWork(fiber);
+		completeWork(node);
 		const sibling = node.sibling;
 
 		if (sibling !== null) {
