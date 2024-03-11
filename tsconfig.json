@@ -1,5 +1,6 @@
 {
   "compileOnSave": true,
+  "include": ["./packages/**/*"],
   // 用来配置编译选项
   "compilerOptions": {
     "target": "ESNext",// 生成js 的版本，下一版本

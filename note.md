@@ -227,3 +227,68 @@ react内部三个阶段
   * tsconfig.js 修改
   * 类似 webpack resolve alias的功能， 在rollup中使用
 
+## 八 实现useState
+hook脱离FC上下文， 仅仅是普通函数， 如何让他拥有感知上下文环境的能力
+
+比如说：
+* hook如何知道在另一个hook的上下文环境内执行
+```js
+function App() {
+  useEffect(() => {
+    // 执行useState时怎么知道处在 useEffect 上下文
+    useState(0)
+  })
+}
+```
+
+* hook怎么知道当前是mount还是update?
+  * 解决方案： 在不同上下文中调用的hook不是同一个函数
+
+
+实现 内部数据共享层 时的注意事项：
+以浏览器为例， Reconciler + hostConfig = ReactDOM
+
+
+增加 内部数据共享层， 意味着Reconciler与React产生关联， 进而意味着ReactDOM与React产生关联
+
+如果两个包产生关联， 在打包时需要考虑： 两者的代码是打包在一起还是分开？
+
+如果打包在一起， 意味着打包后的ReactDOM中会包含React的代码， 那么ReactDOM中会包含一个内部数据共享层， React中也会包含一个内部数据共享层， 这两者不是同一个内部数据共享层。
+
+而我们希望两者共享数据， 所以不希望ReactDOM中会包含React的代码
+
+
+
+* hook如何知道自身数据保存在哪
+  * 答案： 可以记录在当前正在render的FC对应的fiberNode， 在fiberNode中保存hook数据
+
+
+## 实现Test Utils测试工具
+来源于 ReactTestUtils, 特点是使用ReactDOM作为宿主环境
+
+实现测试环境
+```shell
+pnpm i -D -w jest jest-config jest-environment-jsdom
+```
+
+增加jest.config.js配置
+```js
+const { defaults } = require('jest-config');
+
+module.exports = {
+	...defaults,
+	rootDir: process.cwd(),
+	modulePathIgnorePatterns: ['<rootDir>/.history'],
+	moduleDirectories: [
+		// 对于 React  ReactDOM
+		'dist/node_modules',
+		// 对于第三方依赖
+		...defaults.moduleDirectories
+	],
+	testEnvironment: 'jsdom'
+};
+```
+为jest增加JSX解析能力， 安装Babel
+```shell
+pnpm i -D -w @babel/core @babel/preset-env @babel/plugin-transform-react-jsx
+```
