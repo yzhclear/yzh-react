@@ -1,7 +1,7 @@
 import { Container, Instance, appendInitalChild, createInstance, createTextInstance } from 'hostConfig';
 import { FiberNode } from './fiber';
 import { HostComponent, HostText, HostRoot, FunctionComponent } from './workTags';
-import { NoFlags } from './fiberFlags';
+import { NoFlags, Update } from './fiberFlags';
 
 // 递归中的归阶段
 export const completeWork = (wip: FiberNode) => {
@@ -25,6 +25,11 @@ export const completeWork = (wip: FiberNode) => {
 		case HostText:
       if (current !== null && wip.stateNode) {
 				// update
+				const oldText = current.memoizedProps.content
+				const newText = newProps.content
+				if (oldText !== newText) {
+					markUpdate(wip)
+				}
 			} else {
 				// mount
         const instance = createTextInstance(newProps.content)
@@ -71,6 +76,10 @@ function appendAllChildren(parent: Container | Instance, wip: FiberNode) {
 		node.sibling.return = node.return;
 		node = node.sibling;
 	}
+}
+
+function markUpdate(fiber: FiberNode) {
+	fiber.flags |= Update
 }
 
 function bubbleProperties(wip: FiberNode) {

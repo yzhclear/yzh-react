@@ -24,6 +24,8 @@ export class FiberNode {
 
 	updateQueue: unknown;
 
+	deletions: FiberNode[] | null;
+
 	constructor(tag: WorkTag, pendingProps: Props, key: Key) {
 		this.tag = tag;
 		this.key = key;
@@ -43,6 +45,7 @@ export class FiberNode {
 		this.memoizedProps = null;
     this.memoizedState = null;
 
+		this.deletions = null
 
 		this.alternate = null; // 指向 currentFiberNode 或 workInprogress
 		// 副作用
