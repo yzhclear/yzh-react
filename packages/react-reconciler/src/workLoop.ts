@@ -7,6 +7,7 @@ import {commitMutationEffects} from './commitWork'
 
 let workInprogress: FiberNode | null = null;
 
+// 每次更新时， 都要执行这一步， 主要是为了拿到HostRootFiber的alternate, 即WorkInProgress节点去递归(beginWork/completeWork)
 function prepareFreshStack(root: FiberRootNode) {
 	workInprogress = createWorkInProgress(root.current, {});
 }
