@@ -31,7 +31,13 @@ export function renderWithHooks(wip: FiberNode) {
 
 	const Component = wip.type;
 	const props = wip.pendingProps;
+
+	// FC render
 	const children = Component(props);
+	// 重置操作
+	currentlyRenderingFiber = null
+	workInprogressHook = null
+	currentHook = null
 	return children; // 返回jsx执行后生成的ReactElement
 }
 
@@ -59,6 +65,7 @@ function updateState<State>(): [State, Dispatch<State>] {
 }
 
 function updateWorkInprogressHook(): Hook {
+	// TODO render阶段触发的更新
 	let nextCurrentHook: Hook | null
 
 	if (currentHook === null) {
