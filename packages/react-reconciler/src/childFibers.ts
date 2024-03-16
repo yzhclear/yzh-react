@@ -28,12 +28,22 @@ function ChildReconciler(shouldTrackEffects: boolean) {
 		} else [deletions.push(childToDelete)];
 	}
 
+	function deletRemainingChild(returnFiber: FiberNode, currentFirstChild: FiberNode | null) {
+		if (!shouldTrackEffects) return
+
+		let childToDelete = currentFirstChild
+		while(childToDelete !== null) {
+			deleteChild(returnFiber, childToDelete)
+			childToDelete = childToDelete.sibling
+		}
+	}
+
 	function reconcileSingleElement(
 		returnFiber: FiberNode,
 		currentFiber: FiberNode | null,
 		element: ReactElementType
 	) {
-		work: if (currentFiber !== null) {
+		while(currentFiber !== null) {
 			// update
 			const key = element.key;
 			if (currentFiber.key === key) {
@@ -42,19 +52,24 @@ function ChildReconciler(shouldTrackEffects: boolean) {
 						// 节点复用
 						const existing = useFiber(currentFiber, element.props);
 						existing.return = returnFiber;
+						// 当前节点可复用， 删除剩余的节点
+						deletRemainingChild(returnFiber, currentFiber.sibling)
 						return existing;
 					}
-					deleteChild(returnFiber, currentFiber);
-					break work;
+					// key相同， type不同， 都无法复用，删掉所有旧的
+					deletRemainingChild(returnFiber, currentFiber)
+					break;
 				} else {
 					if (__DEV__) {
 						console.warn('未实现react类型');
-						break work;
+						break;
 					}
 				}
 			} else {
+				// key不同
 				deleteChild(returnFiber, currentFiber);
-				break work;
+				currentFiber = currentFiber.sibling
+				break;
 			}
 		}
 
@@ -68,14 +83,16 @@ function ChildReconciler(shouldTrackEffects: boolean) {
 		currentFiber: FiberNode | null,
 		content: string | number
 	) {
-    if (currentFiber !== null) {
+		while (currentFiber !== null) {
       // update
       if (currentFiber.tag === HostText) {
         const existing = useFiber(currentFiber, {content})
         existing.return = returnFiber
+				deletRemainingChild(returnFiber, currentFiber.sibling)
         return existing
       }
       deleteChild(returnFiber, currentFiber)
+			currentFiber = currentFiber.sibling
     }
 		const fiber = new FiberNode(HostText, { content }, null);
 		fiber.return = returnFiber;

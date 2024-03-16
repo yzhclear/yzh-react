@@ -1,6 +1,7 @@
 import { FiberNode } from 'react-reconciler/src/fiber';
 import { HostComponent, HostText } from 'react-reconciler/src/workTags';
 import { Props } from 'shared/ReactTypes';
+import { DOMElement, updateFiberProps } from './SyntheticEvent';
 
 export type Container = Element;
 export type Instance = Element;
@@ -8,8 +9,9 @@ export type TextInstance = Text
 
 export const createInstance = (type: string, props: Props) => {
   // TODO 处理props
-  const element = document.createElement(type)
-  return element
+  const element = document.createElement(type) as unknown
+  updateFiberProps(element as DOMElement, props)
+  return element as DOMElement
 }
 
 export const appendInitalChild = (parent: Container | Instance, child: Instance) => {

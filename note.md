@@ -16,9 +16,6 @@ pnpm i -D -w prettier
 pnpm i -D -w eslint-config-prettier # 覆盖eslint本身的规则
 
 pnpm i -D -w eslint-plugin-prettier # 用 Prettier来接管接管修复代码 即 eslint --fix
-
-
-
 ```
 
 commit 规范
@@ -261,9 +258,11 @@ function App() {
 
 * hook如何知道自身数据保存在哪
   * 答案： 可以记录在当前正在render的FC对应的fiberNode， 在fiberNode中保存hook数据
+  
+    
+  
+    ### 实现Test Utils测试工具
 
-
-## 实现Test Utils测试工具
 来源于 ReactTestUtils, 特点是使用ReactDOM作为宿主环境
 
 实现测试环境
@@ -292,3 +291,38 @@ module.exports = {
 ```shell
 pnpm i -D -w @babel/core @babel/preset-env @babel/plugin-transform-react-jsx
 ```
+
+##  十二. 实现Diff算法
+
+当前仅实现了单一节点的增/删操作，即「单节点Diff算法」。本节课实现「多节点的Diff算法」。
+
+对于 **reconcileSingleElement** 的改动当前支持的情况：
+
+- ﻿﻿A1->B1
+- ﻿﻿A1->A2
+
+需要支持的情况：
+
+* ABC->A
+
+「单/多节点」是指「更新后是单/多节点」。
+
+更细致的，我们需要区分4种情况：
+
+• key相同，type相同 == 复用当前节点， 并删除剩余的兄弟节点
+
+例如：  A1B2C3  ->  A1   
+
+• key相同，type不同== 不存在任何复用的可能性， 删除当前所有节点， 重新创建
+
+例如：A1B2C3  ->  B1
+
+- ﻿﻿key不同，type相同 == 当前节点不能复用
+- ﻿﻿key不同，type不同 == 当前节点不能复用
+  * key不同的情况， 就有可能是顺序变了， 所以需要去遍历旧的兄弟节点， 重新diff
+    * 比如： A1B2C3 -> C3.  刚开始时 A1 与 C3 key不同， 则需要继续遍历A1的兄弟节点 B2 和 C3与C3做diff
+
+### 对于reconcileSingleTextNode的改动
+
+类似于 **reconcileSingleElement**
+

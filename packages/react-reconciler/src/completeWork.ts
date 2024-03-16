@@ -2,6 +2,7 @@ import { Container, Instance, appendInitalChild, createInstance, createTextInsta
 import { FiberNode } from './fiber';
 import { HostComponent, HostText, HostRoot, FunctionComponent } from './workTags';
 import { NoFlags, Update } from './fiberFlags';
+import { updateFiberProps } from 'react-dom/src/SyntheticEvent';
 
 // 递归中的归阶段
 export const completeWork = (wip: FiberNode) => {
@@ -12,6 +13,9 @@ export const completeWork = (wip: FiberNode) => {
 		case HostComponent:
 			if (current !== null && wip.stateNode) {
 				// update
+				// 为了实现合成事件， 这里先直接给DOM元素赋值props
+				// TODO 比较不同的props是否变化， 打上Update标记， 在commit阶段的commitUpdate方法里再赋值
+				updateFiberProps(wip.stateNode, newProps)
 			} else {
 				// mount
 				// 1.构建DOM
