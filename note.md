@@ -16,9 +16,6 @@ pnpm i -D -w prettier
 pnpm i -D -w eslint-config-prettier # 覆盖eslint本身的规则
 
 pnpm i -D -w eslint-plugin-prettier # 用 Prettier来接管接管修复代码 即 eslint --fix
-
-
-
 ```
 
 commit 规范
@@ -261,9 +258,11 @@ function App() {
 
 * hook如何知道自身数据保存在哪
   * 答案： 可以记录在当前正在render的FC对应的fiberNode， 在fiberNode中保存hook数据
+  
+    
+  
+    ### 实现Test Utils测试工具
 
-
-## 实现Test Utils测试工具
 来源于 ReactTestUtils, 特点是使用ReactDOM作为宿主环境
 
 实现测试环境
@@ -293,84 +292,37 @@ module.exports = {
 pnpm i -D -w @babel/core @babel/preset-env @babel/plugin-transform-react-jsx
 ```
 
-## 第十课 初探update流程
-update流程与mount流程的区别
+##  十二. 实现Diff算法
 
-对于beginWork:
-* 需要处理 ChildDeletion  的情况
-* 需要处理节点移动的情况 (abc -> bca)
+当前仅实现了单一节点的增/删操作，即「单节点Diff算法」。本节课实现「多节点的Diff算法」。
 
-对于 completeWork:
-* 需要处理HostText内容更新的情况
-* 需要处理HostComponent属性变化的情况
+对于 **reconcileSingleElement** 的改动当前支持的情况：
 
-对于 commitWork:
-* 对于ChildDeletion, 需要遍历被删除的子树
+- ﻿﻿A1->B1
+- ﻿﻿A1->A2
 
-对于useState:
-* 实现对于mountState的updateState
+需要支持的情况：
 
+* ABC->A
 
-### beginWork流程
-本节课仅处理单一节点，需要处理：
-* singleElement
-* singleTextNode
+「单/多节点」是指「更新后是单/多节点」。
 
-处理流程为：
-* 比较是否可以复用 currentFiber
-  * 比较key， 如果key不同， 不能复用
-  * 比较type， 如果type不同， 不能复用
-  * 如果key和type都相同， 则可复用
-* 不能复用， 则创建新的（同mount流程）， 可以复用则复用旧的
+更细致的，我们需要区分4种情况：
 
-注意： 对于同一个fiberNode, 即使反复更新， current, wip这两个fiberNode会重复复用
+• key相同，type相同 == 复用当前节点， 并删除剩余的兄弟节点
 
-### completeWork流程
-主要处理 标记Update 的情况， 本节课处理HostText更新情况
+例如：  A1B2C3  ->  A1   
 
-### commitWork流程
-对于标记ChildDeletion的子树， 由于子树中：
-* 对于FC, 需要处理 useEffect unmount执行，解绑ref
-* 对于HostComponent， 需要解绑ref
-* 对于子树的 根HostComponent, 需要移除DOM
+• key相同，type不同== 不存在任何复用的可能性， 删除当前所有节点， 重新创建
 
-所以需要实现 遍历ChildDeletion子树 的流程
+例如：A1B2C3  ->  B1
 
+- ﻿﻿key不同，type相同 == 当前节点不能复用
+- ﻿﻿key不同，type不同 == 当前节点不能复用
+  * key不同的情况， 就有可能是顺序变了， 所以需要去遍历旧的兄弟节点， 重新diff
+    * 比如： A1B2C3 -> C3.  刚开始时 A1 与 C3 key不同， 则需要继续遍历A1的兄弟节点 B2 和 C3与C3做diff
 
-### 对于useState
-需要实现：
-* 针对update时的dispatcher
-* 实现对标mountWorkInProgressHook的WorkInProgressHook
-* 实现updateState中 计算新state的逻辑
+### 对于reconcileSingleTextNode的改动
 
-其中updateWorkInProgressHook的实现需要考虑的问题：
-* hook数据从哪里来
-* 交互阶段触发的更新
-```js
-<div onClick={() => update(1)}></div>
-```
-* render阶段触发的更新（TODO）
-```js
-function App() {
-  const [num, update] = useState(0)
-  update(100)
-  return (
-    <div>{num}</div>
-  )
-}
-``` 
+类似于 **reconcileSingleElement**
 
-## 第 11 课 实现事件系统
-事件系统本质上根植于浏览器事件模型， 所以它隶属于React DOM, 在实现时要做到对 Reconciler 0侵入。
-
-
-实现事件系统需要考虑：
-* 模拟实现浏览器事件捕获， 冒泡流程。
-* 实现合成事件对象
-* 方便后续扩展
-
-
-### 实现ReactDOM和Reconciler对接
-将事件回调保存在DOM中，通过一下两个时机对接：
-* 创建DOM时
-* 更新属性时
