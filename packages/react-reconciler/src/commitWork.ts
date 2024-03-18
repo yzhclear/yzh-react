@@ -181,7 +181,7 @@ function getHostSibling(fiber: FiberNode) {
 		}
 
 		node.sibling.return = node.return;
-		node = node.sibling;
+		node = node.sibling; 
 
 		while (node.tag !== HostComponent && node.tag !== HostText) {
 			// 向下遍历
@@ -196,7 +196,7 @@ function getHostSibling(fiber: FiberNode) {
 			}
 		}
 
-		if ((node.flags & Placement) !== NoFlags) {
+		if ((node.flags & Placement) === NoFlags) {
 			return node.stateNode;
 		}
 	}

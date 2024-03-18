@@ -403,9 +403,9 @@ A1 B2 C3-> B2 C3 A1
 
 所以只需要记录最后一个可复用fiber在current中的index（lastPlacedlndex），在接下来的遍历中：
 
-- ﻿﻿如果接下来遍历到的可复用fiber的index ＜lastPlacedlndex，则标记Placement
+- 如果接下来遍历到的可复用fiber的index ＜lastPlacedlndex，则标记Placement
 
-- ﻿﻿否则，不标记
+- 否则，不标记
 
   
 
