@@ -1,4 +1,11 @@
-import { Container, appendChildToContainer, commitUpdate, removeChild } from 'hostConfig';
+import {
+	Container,
+	Instance,
+	appendChildToContainer,
+	commitUpdate,
+	insertChildToContainer,
+	removeChild
+} from 'hostConfig';
 import { FiberNode, FiberRootNode } from './fiber';
 import {
 	ChildDeletion,
@@ -78,22 +85,23 @@ function commitDeletion(childToDelete: FiberNode) {
 	commitNestedComponent(childToDelete, (unMountFiber) => {
 		switch (unMountFiber.tag) {
 			case HostComponent:
-				if (rootHostNode === null) {   // 这里的赋值是因为， 当前要删除的子树的根节点可能并不是HostText或者HostCommponent
-					rootHostNode = unMountFiber  // 所以我们要找到这个子树根节点对应的第一个真实的DOM节点， 进行删除
+				if (rootHostNode === null) {
+					// 这里的赋值是因为， 当前要删除的子树的根节点可能并不是HostText或者HostCommponent
+					rootHostNode = unMountFiber; // 所以我们要找到这个子树根节点对应的第一个真实的DOM节点， 进行删除
 				}
 				// TODO 解绑ref
-				return
-			case HostText: 
+				return;
+			case HostText:
 				if (rootHostNode === null) {
-					rootHostNode = unMountFiber
+					rootHostNode = unMountFiber;
 				}
 			case FunctionComponent:
 				// TODO Effect unmount
 				// 解绑ref
-				return
+				return;
 			default:
 				if (__DEV__) {
-					console.warn('未处理的unmount类型', unMountFiber)
+					console.warn('未处理的unmount类型', unMountFiber);
 				}
 				break;
 		}
@@ -101,15 +109,15 @@ function commitDeletion(childToDelete: FiberNode) {
 
 	// 删除hostRootNode
 	if (rootHostNode !== null) {
-		const hostParent = getHostParent(childToDelete)
+		const hostParent = getHostParent(childToDelete);
 		if (hostParent !== null) {
-			removeChild((rootHostNode as FiberNode).stateNode, hostParent)
+			removeChild((rootHostNode as FiberNode).stateNode, hostParent);
 		}
 	}
 
 	// 重置属性
-	childToDelete.return = null
-	childToDelete.child = null
+	childToDelete.return = null;
+	childToDelete.child = null;
 }
 
 function commitNestedComponent(
@@ -148,10 +156,51 @@ const commitPlacement = (finishedWork: FiberNode) => {
 
 	// find parent DOM
 	const parent = getHostParent(finishedWork);
+	const sibling = getHostSibling(finishedWork);
 	if (parent !== null) {
-		appendPlacementNodeIntoContainer(finishedWork, parent);
+		insertOrAppendPlacementNodeIntoContainer(finishedWork, parent, sibling);
 	}
 };
+
+function getHostSibling(fiber: FiberNode) {
+	let node: FiberNode = fiber;
+
+	findSibling: while (true) {
+		while (node.sibling === null) {
+			const parent = node.return;
+
+			if (
+				parent === null ||
+				parent.tag == HostComponent ||
+				parent.tag === HostRoot
+			) {
+				return null;
+			}
+
+			node = parent;
+		}
+
+		node.sibling.return = node.return;
+		node = node.sibling;
+
+		while (node.tag !== HostComponent && node.tag !== HostText) {
+			// 向下遍历
+			if ((node.flags & Placement) !== NoFlags) {
+				continue findSibling;
+			}
+			if (node.child === null) {
+				continue findSibling;
+			} else {
+				node.child.return = node;
+				node = node.child;
+			}
+		}
+
+		if ((node.flags & Placement) !== NoFlags) {
+			return node.stateNode;
+		}
+	}
+}
 
 function getHostParent(fiber: FiberNode): Container | null {
 	let parent = fiber.return;
@@ -175,24 +224,29 @@ function getHostParent(fiber: FiberNode): Container | null {
 	return null;
 }
 
-function appendPlacementNodeIntoContainer(
+function insertOrAppendPlacementNodeIntoContainer(
 	finishedWork: FiberNode,
-	hostParent: Container
+	hostParent: Container,
+	before?: Instance
 ) {
 	// fiber host
 	if (finishedWork.tag === HostComponent || finishedWork.tag === HostText) {
-		appendChildToContainer(hostParent, finishedWork.stateNode);
+		if (before) {
+			insertChildToContainer(finishedWork.stateNode, hostParent, before);
+		} else {
+			appendChildToContainer(hostParent, finishedWork.stateNode);
+		}
 		return;
 	}
 
 	const child = finishedWork.child;
 	if (child !== null) {
-		appendPlacementNodeIntoContainer(child, hostParent);
+		insertOrAppendPlacementNodeIntoContainer(child, hostParent);
 
 		let sibling = child.sibling;
 
 		while (sibling !== null) {
-			appendPlacementNodeIntoContainer(sibling, hostParent);
+			insertOrAppendPlacementNodeIntoContainer(sibling, hostParent);
 			sibling = sibling.sibling;
 		}
 	}
