@@ -26,10 +26,14 @@ export function isValidElement(object: any) {
 }
 
 
-export function jsx(type: ElementType, config: any, ...maybeChildren: any) {
+export function jsx(type: ElementType, config: any, maybeKey: any,  ...maybeChildren: any) {
   let key: Key = null
   let ref: Ref = null
   let props: Props = {}
+
+  if (maybeKey !== undefined) {
+    key = '' + maybeKey
+  }
 
   for(let prop in config) {
     const val = config[prop]
@@ -64,10 +68,14 @@ export function jsx(type: ElementType, config: any, ...maybeChildren: any) {
   return ReactElement(type, key, ref, props)
 }
 
-export const jsxDEV =  (type: ElementType, config: any) => {
+export const jsxDEV =  (type: ElementType, config: any, maybeKey: any) => {
   let key: Key = ''
   let ref: Ref = null
   let props: Props = {}
+
+  if (maybeKey !== undefined) {
+    key = '' + maybeKey
+  }
 
   for(let prop in config) {
     const val = config[prop]

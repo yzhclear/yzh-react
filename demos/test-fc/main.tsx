@@ -10,7 +10,7 @@ function App() {
 
 	const arr =
 		num % 2 === 0
-			? [<li id="1" key="1">1</li>, <li id="2" key="2">2</li>, <li id='3' key="3">3</li>]
+			? [<li key="1">1</li>, <li key="2">2</li>, <li key="3">3</li>]
 			: [<li key="3">3</li>, <li key="2">2</li>, <li key="1">1</li>];
 
 	return <ul onClick={() => setNum(num + 1)}>{arr}</ul>;

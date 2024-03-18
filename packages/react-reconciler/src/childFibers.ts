@@ -135,8 +135,9 @@ function ChildReconciler(shouldTrackEffects: boolean) {
 		for (let i = 0; i < newChild.length; i++) {
 			// 2. 遍历当前的newChild
 			const after = newChild[i];
-			const newFiber = updateFromFiber(returnFiber, existingChildren, i, after);
+			const newFiber = updateFromMap(returnFiber, existingChildren, i, after);
 
+			// 之前xxx节点 更新为 null/undefined
 			if (newFiber === null) {
 				continue;
 			}
@@ -180,7 +181,7 @@ function ChildReconciler(shouldTrackEffects: boolean) {
 		return firstNewFiber
 	}
 
-	function updateFromFiber(
+	function updateFromMap(
 		returnFiber: FiberNode,
 		existingChildren: ExistingChildren,
 		index: number,
