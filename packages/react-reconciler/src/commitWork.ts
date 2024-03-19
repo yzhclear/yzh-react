@@ -78,23 +78,43 @@ const commitMutationEffectsOnFiber = (finishedWork: FiberNode) => {
 	}
 };
 
+function recordHostChildrenToDelete(childrenToDelete: FiberNode[], unmountFiber: FiberNode) {
+	// 找到第一个 root host节点
+	let lastOne = childrenToDelete[childrenToDelete.length - 1]
+
+	if (!lastOne) {
+		childrenToDelete.push(unmountFiber)
+	} else {
+		let node = lastOne.sibling
+		while(node !== null) {
+			if (unmountFiber === node) {
+				childrenToDelete.push(unmountFiber)
+			}
+			node = node.sibling
+		}
+	}
+}
+
 function commitDeletion(childToDelete: FiberNode) {
-	let rootHostNode: FiberNode | null = null;
+	let rootChildrenToDelete: FiberNode[] = []
 	// 递归子树 对子树中的每个节点做卸载操作
 	// 在对子树中的每个节点做卸载操作时， 需要根据不同类型执行不同的操作
 	commitNestedComponent(childToDelete, (unMountFiber) => {
 		switch (unMountFiber.tag) {
 			case HostComponent:
-				if (rootHostNode === null) {
-					// 这里的赋值是因为， 当前要删除的子树的根节点可能并不是HostText或者HostCommponent
-					rootHostNode = unMountFiber; // 所以我们要找到这个子树根节点对应的第一个真实的DOM节点， 进行删除
-				}
+				// if (rootHostNode === null) {
+				// 	// 这里的赋值是因为， 当前要删除的子树的根节点可能并不是HostText或者HostCommponent
+				// 	rootHostNode = unMountFiber; // 所以我们要找到这个子树根节点对应的第一个真实的DOM节点， 进行删除
+				// }
+				recordHostChildrenToDelete(rootChildrenToDelete, unMountFiber)
 				// TODO 解绑ref
 				return;
 			case HostText:
-				if (rootHostNode === null) {
-					rootHostNode = unMountFiber;
-				}
+				// if (rootHostNode === null) {
+				// 	rootHostNode = unMountFiber;
+				// }
+				recordHostChildrenToDelete(rootChildrenToDelete, unMountFiber)
+				return
 			case FunctionComponent:
 				// TODO Effect unmount
 				// 解绑ref
@@ -108,10 +128,13 @@ function commitDeletion(childToDelete: FiberNode) {
 	});
 
 	// 删除hostRootNode
-	if (rootHostNode !== null) {
+	if (rootChildrenToDelete.length) {
 		const hostParent = getHostParent(childToDelete);
 		if (hostParent !== null) {
-			removeChild((rootHostNode as FiberNode).stateNode, hostParent);
+			rootChildrenToDelete.forEach(node => {
+				removeChild(node.stateNode, hostParent);
+			})
+			
 		}
 	}
 

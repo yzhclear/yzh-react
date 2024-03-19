@@ -442,3 +442,135 @@ function App() {
 
 
 
+## 第十二 实现Fragment
+为了提高组件结构灵活性，需要实现Fragment，需要区分几种情況：
+
+1. Fragment包裹其他组件
+```jsx
+<>
+  <div></div>
+  <div></div>
+</>
+
+// 对应DOM
+<div></div>
+<div></div>
+```
+这种情况的JSX转换结果
+```js
+jsxs(Fragment, {
+  children: [
+    jsx("div", {}),
+    jsx("div", {}),
+  ]
+})
+```
+
+type为Fragment的ReactElement，对单一节点的Diff需要考虑Fragment的情况
+
+2. Fragment与其他组件同级
+
+```jsx
+<ul>
+  <>
+    <li>1</li>
+    <li>2</li>
+  </>
+
+  <li>3</li>
+  <li>4</li>
+</ul>
+
+// 对应DOM
+<ul>
+  <li>1</li>
+  <li>2</li>
+  <li>3</li>
+  <li>4</li>
+</ul>
+```
+
+对应编译的结果：
+```js
+jsxs('ul', {
+  children: [
+    jsxs(Fragment, {
+      children: [
+        jsx("li", {
+          chilren: '1'
+          }),
+        jsx("li", {
+          chilren: '2'
+        }),
+      ]
+    }),
+    jsx("li", {
+        chilren: '3'
+    }),
+    jsx("li", {
+      chilren: '4'
+    }),
+  ]
+})
+```
+
+
+children为数组类型，则进入reconcileChildrenArray方法，数组中的某一项为Fragment，所以需要增加「type为
+Fragment的ReactElement的判断」，同时beginWork中需要增加Fragment类型的判断。
+
+3. 数组形式的Fragment
+```jsx
+// arr = [<li>c</li>, <li>d</li>]
+<ul>
+  <li>a</li>
+  <li>b</li>
+  {arr}
+</ul>
+
+// 对应DOM
+<ul>
+  <li>a</li>
+  <li>b</li>
+  <li>c</li>
+  <li>d</li>
+</ul>
+```
+对应编译的结果：
+```js
+jsxs('ul', {
+  children: [
+    jsx("li", {
+        chilren: 'a'
+    }),
+    jsx("li", {
+      chilren: 'b'
+    }),
+    arr
+  ]
+})
+```
+children为数组类型，则进入reconcileChildrenArray方法，数组中的某一项为数组，所以需要增加
+'reconcileChildrenArray中数组类型的判断」。
+
+### Fragment对ChildDeletion的影响
+ChildDeletion删除DOM的逻辑：
+• 找到子树的根Host节点
+• 找到子树对应的父级Host节点
+• 从父级Host节点中删除子树根Host节点考虑删除p节点的情况：
+
+```html
+<div>
+  <p>xxx</p>
+</div>
+```
+考虑删除Fragment后，子树的根Host节点可能存在多个：
+```js
+<div>
+  <>
+    <p>xxx</p>
+    <p>yyy</p>
+  </>
+</div>
+```
+同
+对React的影响
