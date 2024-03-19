@@ -1,4 +1,4 @@
-import { REACT_ELEMENT_TYPE } from 'shared/ReactSymbols'
+import { REACT_ELEMENT_TYPE, REACT_FRAGMENT_TYPE } from 'shared/ReactSymbols'
 import { ReactElementType, Type, Key, Props, Ref, ElementType } from 'shared/ReactTypes'
 
 const ReactElement = function(
@@ -68,8 +68,10 @@ export function jsx(type: ElementType, config: any, maybeKey: any,  ...maybeChil
   return ReactElement(type, key, ref, props)
 }
 
+export const Fragment = REACT_FRAGMENT_TYPE
+
 export const jsxDEV =  (type: ElementType, config: any, maybeKey: any) => {
-  let key: Key = ''
+  let key: Key = null
   let ref: Ref = null
   let props: Props = {}
 

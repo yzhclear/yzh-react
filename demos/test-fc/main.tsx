@@ -7,14 +7,29 @@ function Child() {
 
 function App() {
 	const [num, setNum] = useState(100);
-
-	const arr =
+		const arr =
 		num % 2 === 0
 			? [<li key="1">1</li>, <li key="2">2</li>, <li key="3">3</li>]
 			: [<li key="3">3</li>, <li key="2">2</li>, <li key="1">1</li>];
-
-	return <ul onClick={() => setNum(num + 1)}>{arr}</ul>;
+	return (
+		<ul onClick={() => setNum(num + 1)}>
+			<li>a</li>
+			<li>b</li>
+			{arr}
+		</ul>
+	);
 }
+
+// function App() {
+// 	const [num, setNum] = useState(100);
+
+// 	const arr =
+// 		num % 2 === 0
+// 			? [<li key="1">1</li>, <li key="2">2</li>, <li key="3">3</li>]
+// 			: [<li key="3">3</li>, <li key="2">2</li>, <li key="1">1</li>];
+
+// 	return <ul onClick={() => setNum(num + 1)}>{arr}</ul>;
+// }
 
 // function App() {
 //   const [num, setNum] = useState(100)
