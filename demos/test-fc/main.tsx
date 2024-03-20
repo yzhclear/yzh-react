@@ -5,6 +5,18 @@ function Child() {
 	return <span>big-react</span>;
 }
 
+// function App() {
+// 	return (
+// 		<ul>
+// 			<>
+// 				<li>a</li>
+// 				<li>b</li>
+// 			</>
+// 			<li>c</li>
+// 		</ul>
+// 	);
+// }
+
 function App() {
 	const [num, setNum] = useState(100);
 		const arr =
