@@ -1,5 +1,5 @@
-
 ## 一. 项目初始化
+
 ```
 pnpm init
 
@@ -23,7 +23,7 @@ commit 规范
 ```
 pnpm i -D -w husky@8
 npx husky install
-npx husky add .husky/pre-commit "pnpm lint" 
+npx husky add .husky/pre-commit "pnpm lint"
 
 
 pnpm i -D -w commitlint @commitlint/cli @commitlint/config-conventional
@@ -31,50 +31,50 @@ npx husky add .husky/commit-msg "npx --no-install commitlint -e $HUSKY_GIT_PARAM
 ```
 
 打包工具
+
 ```
 pnpm i -D -w rollup
 ```
 
-
 ## 二. JSX 转换
-React项目结构:
-* react: 宿主环境无关的公用方法
-* react-reconciler: 协调器的实现， 宿主环境无关
-* 各种宿主环境的包
-* shared公用辅助方法， 宿主环境相关
-JSX转换属于react包
 
+React项目结构:
+
+- react: 宿主环境无关的公用方法
+- react-reconciler: 协调器的实现， 宿主环境无关
+- 各种宿主环境的包
+- shared公用辅助方法， 宿主环境相关
+  JSX转换属于react包
 
 包括两部分：
-* 编译时
-* 运行时： jsx方法或React.createElement方法的实现(包括dev、prod两个环境)
+
+- 编译时
+- 运行时： jsx方法或React.createElement方法的实现(包括dev、prod两个环境)
 
 编译时由 babel 编译实现， 我们来实现运行时， 工作量包括
-* 实现jsx方法
-* 实现打包流程
-* 实现调试打包结果的环境
 
-
+- 实现jsx方法
+- 实现打包流程
+- 实现调试打包结果的环境
 
 ### 实现jsx方法
 
 包括:
 
-* jsxDEV方法（dev环境）
-* jsx方法（prod环境）
-* React.createElement方法
-
-
+- jsxDEV方法（dev环境）
+- jsx方法（prod环境）
+- React.createElement方法
 
 ### 实现打包流程
 
 对应上述3方法， 打包对应文件
 
-* react/jsx-dev-runtime.js(dev环境)
-* react/jsx-runtime.js(prod环境)
-* react
+- react/jsx-dev-runtime.js(dev环境)
+- react/jsx-runtime.js(prod环境)
+- react
 
 #### 打包文件
+
 ```
 pnpm i -D -w rollup-plugin-typescript2
 pnpm i -D -w @rollup/plugin-commonjs
@@ -85,6 +85,7 @@ pnpm i -D -w rollup-plugin-generate-package-json
 ```
 
 #### 调试打包结果
+
 ```
 cd dist/node_modules/react
 pnpm link  --global
@@ -93,101 +94,121 @@ pnpm link react --global
 ```
 
 ## 三. 初探Reconciler
-* 消费JSX
-* 没有编译优化
-* 开放通用API供不同宿主环境使用
+
+- 消费JSX
+- 没有编译优化
+- 开放通用API供不同宿主环境使用
 
 ### 核心模块消费JSX的过程
+
 **核心模块操作的数据结构是？**
 当前已知的数据结构： React Element
 
 React Element如果作为核心模块操作的数据结构， 存在的问题：
-* 无法表达节点之间的的关系
-* 字段有限， 不好扩展（如： 无法表达状态）
 
+- 无法表达节点之间的的关系
+- 字段有限， 不好扩展（如： 无法表达状态）
 
 所以， 需要一种新的数据结构， 它的特点：
-* 介于 React Element 与 真实UI节点之间
-* 能够表达节点之间的的关系
-* 方便扩展(不仅作为数据存储单元， 也能作为工作单元)
+
+- 介于 React Element 与 真实UI节点之间
+- 能够表达节点之间的的关系
+- 方便扩展(不仅作为数据存储单元， 也能作为工作单元)
 
 这就是FiberNode(虚拟DOM在React中的实现)
 
-
 当前我们了解的节点类型：
-* JSX
-* React Element
-* FiberNode
-* DOM Element
+
+- JSX
+- React Element
+- FiberNode
+- DOM Element
 
 ### Reconcile的工作方式
+
 对于同一个节点， 比较其React Element 与 FiberNode， 生成子 FiberNode。
 并根据比较的结果生成不同标记(插入、删除、移动...)， 对应不同宿主环境API的执行
 
-
 ### 如何触发更新
+
 常见的触发更新的方式:
-* ReactDOM.createRoot().render(或者老版的ReactDOM.render)
-* this.setState
-* useState的dispatch方法
+
+- ReactDOM.createRoot().render(或者老版的ReactDOM.render)
+- this.setState
+- useState的dispatch方法
 
 更新机制的组成部分
-* 代表更新的数据结构 -- update
-* 消费update的数据结构 -- UpdateQueue
+
+- 代表更新的数据结构 -- update
+- 消费update的数据结构 -- UpdateQueue
 
 接下来的工作包括：
-* 实现mount时调用的API
-* 将该API接入上述更新机制中
+
+- 实现mount时调用的API
+- 将该API接入上述更新机制中
 
 需要考虑的事情：
-* 更新可能发生于任意组件， 而更新流程是从根节点递归的
-* 需要一个同意的根节点保存通用信息 
 
+- 更新可能发生于任意组件， 而更新流程是从根节点递归的
+- 需要一个同意的根节点保存通用信息
 
 ## 五.初探mount流程
+
 更新流程的目的：
-* 生成wip fiberNode树
-* 标记副作用flags
+
+- 生成wip fiberNode树
+- 标记副作用flags
 
 更新流程的步骤：
-* 递： beginWork
-* 归： completeWork
+
+- 递： beginWork
+- 归： completeWork
 
 ### beginWork
+
 ```
 <A>
   <B/>
 </A>
 ```
+
 当进入A的beginWork时， 通过对比B current fiberNode 与 B reactElement, 生成B对应的wip fiberNode,
 在此过程中最多会标记2类与 结构变化 相关的 flags
-* Placement
-* ChildDeletion
 
+- Placement
+- ChildDeletion
 
 ### 实现与Host相关节点的beginWork
-为开发环境增加__DEV__标识
+
+为开发环境增加**DEV**标识
+
 ```
-pnpm i -D -w @rollup/plugin-replace 
+pnpm i -D -w @rollup/plugin-replace
 ```
+
 HostRoot的 beginWork 功能流程：
+
 1. 计算状态的最新值
 2. 创造子FiberNode
 
 ### beginWork 优化策略
+
 考虑如下结构的 reactElement:
+
 ```html
 <div>
-  <p>练习时长</p>
-  <span>两年半</span>
+	<p>练习时长</p>
+	<span>两年半</span>
 </div>
 ```
+
 理论上mount流程完毕后包含的flags:
-* 两年半 Placement
-* span  Placement
-* 练习时长  Placement
-* p  Placement
-* div Placement
+
+- 两年半 Placement
+- span Placement
+- 练习时长 Placement
+- p Placement
+- div Placement
 
 相比较与执行5次 Placement, 我们可以构建好 离屏DOM树 后， 对 div 执行1次 Placement
 
@@ -196,55 +217,63 @@ HostRoot的 beginWork 功能流程：
 其实在首屏渲染时， 为一个有 workInProgress 的节点是 HostRootNode, 那么这个FiberNode其实会进入 update流程， 也就是会打上 Placement 标记
 
 ### completeWork
-* 对于Host类型的fiberNode, 构建离屏DOM树
-* 标记Update Flag
+
+- 对于Host类型的fiberNode, 构建离屏DOM树
+- 标记Update Flag
 
 #### completeWork性能优化策略
+
 flags分布在不同fiberNode中， 如何快速找到他们？
 答案： 利用completeWork向上遍历(归)的流程， 将子fiberNode的flags冒泡到父fiberNode
 
 ## 六. 初探ReactDom
+
 react内部三个阶段
-* schedule阶段
-* render阶段（beginWork completeWork）
-* commit阶段（commitWork）
+
+- schedule阶段
+- render阶段（beginWork completeWork）
+- commit阶段（commitWork）
 
 ### Commit阶段的三个子阶段
-* beforeMutation阶段
-* mutation阶段
-* layout阶段
+
+- beforeMutation阶段
+- mutation阶段
+- layout阶段
 
 ### 当前commit阶段要执行的任务
-* fiber树的切换
-* 执行Placement对应操作
+
+- fiber树的切换
+- 执行Placement对应操作
 
 ### 打包ReactDOM
-* 兼容原版React的导出
-* 处理HostConfig的指向
-  * tsconfig.js 修改
-  * 类似 webpack resolve alias的功能， 在rollup中使用
+
+- 兼容原版React的导出
+- 处理HostConfig的指向
+  - tsconfig.js 修改
+  - 类似 webpack resolve alias的功能， 在rollup中使用
 
 ## 八 实现useState
+
 hook脱离FC上下文， 仅仅是普通函数， 如何让他拥有感知上下文环境的能力
 
 比如说：
-* hook如何知道在另一个hook的上下文环境内执行
+
+- hook如何知道在另一个hook的上下文环境内执行
+
 ```js
 function App() {
-  useEffect(() => {
-    // 执行useState时怎么知道处在 useEffect 上下文
-    useState(0)
-  })
+	useEffect(() => {
+		// 执行useState时怎么知道处在 useEffect 上下文
+		useState(0);
+	});
 }
 ```
 
-* hook怎么知道当前是mount还是update?
-  * 解决方案： 在不同上下文中调用的hook不是同一个函数
-
+- hook怎么知道当前是mount还是update?
+  - 解决方案： 在不同上下文中调用的hook不是同一个函数
 
 实现 内部数据共享层 时的注意事项：
 以浏览器为例， Reconciler + hostConfig = ReactDOM
-
 
 增加 内部数据共享层， 意味着Reconciler与React产生关联， 进而意味着ReactDOM与React产生关联
 
@@ -254,23 +283,22 @@ function App() {
 
 而我们希望两者共享数据， 所以不希望ReactDOM中会包含React的代码
 
+- hook如何知道自身数据保存在哪
 
+  - 答案： 可以记录在当前正在render的FC对应的fiberNode， 在fiberNode中保存hook数据
 
-* hook如何知道自身数据保存在哪
-  * 答案： 可以记录在当前正在render的FC对应的fiberNode， 在fiberNode中保存hook数据
-  
-    
-  
     ### 实现Test Utils测试工具
 
 来源于 ReactTestUtils, 特点是使用ReactDOM作为宿主环境
 
 实现测试环境
+
 ```shell
 pnpm i -D -w jest jest-config jest-environment-jsdom
 ```
 
 增加jest.config.js配置
+
 ```js
 const { defaults } = require('jest-config');
 
@@ -287,12 +315,14 @@ module.exports = {
 	testEnvironment: 'jsdom'
 };
 ```
+
 为jest增加JSX解析能力， 安装Babel
+
 ```shell
 pnpm i -D -w @babel/core @babel/preset-env @babel/plugin-transform-react-jsx
 ```
 
-##  十二. 实现Diff算法
+## 十二. 实现Diff算法
 
 ### 单节点diff
 
@@ -300,12 +330,12 @@ pnpm i -D -w @babel/core @babel/preset-env @babel/plugin-transform-react-jsx
 
 对于 **reconcileSingleElement** 的改动当前支持的情况：
 
-- ﻿﻿A1->B1
-- ﻿﻿A1->A2
+- A1->B1
+- A1->A2
 
 需要支持的情况：
 
-* ABC->A
+- ABC->A
 
 「单/多节点」是指「更新后是单/多节点」。
 
@@ -313,22 +343,20 @@ pnpm i -D -w @babel/core @babel/preset-env @babel/plugin-transform-react-jsx
 
 • key相同，type相同 == 复用当前节点， 并删除剩余的兄弟节点
 
-例如：  A1B2C3  ->  A1   
+例如： A1B2C3 -> A1
 
 • key相同，type不同== 不存在任何复用的可能性， 删除当前所有节点， 重新创建
 
-例如：A1B2C3  ->  B1
+例如：A1B2C3 -> B1
 
-- ﻿﻿key不同，type相同 == 当前节点不能复用
-- ﻿﻿key不同，type不同 == 当前节点不能复用
-  * key不同的情况， 就有可能是顺序变了， 所以需要去遍历旧的兄弟节点， 重新diff
-    * 比如： A1B2C3 -> C3.  刚开始时 A1 与 C3 key不同， 则需要继续遍历A1的兄弟节点 B2 和 C3与C3做diff
+- key不同，type相同 == 当前节点不能复用
+- key不同，type不同 == 当前节点不能复用
+  - key不同的情况， 就有可能是顺序变了， 所以需要去遍历旧的兄弟节点， 重新diff
+    - 比如： A1B2C3 -> C3. 刚开始时 A1 与 C3 key不同， 则需要继续遍历A1的兄弟节点 B2 和 C3与C3做diff
 
 ### 对于reconcileSingleTextNode的改动
 
 类似于 **reconcileSingleElement**
-
-
 
 ### 多节点diff
 
@@ -348,15 +376,13 @@ pnpm i -D -w @babel/core @babel/preset-env @babel/plugin-transform-react-jsx
 1. 将current中所有同级fiber保存在Map中
 2. 遍历newChild数组，对于每个遍历到的element，存在两种情况：
 
- * 在Map中存在对应current fiber，且可以复用
+- 在Map中存在对应current fiber，且可以复用
 
- * 在Map中不存在对应current fiber，或不能复用
+- 在Map中不存在对应current fiber，或不能复用
 
- * 判断是插入还是移动
+- 判断是插入还是移动
 
- * 最后Map中剩下的都标记删除
-
-   
+- 最后Map中剩下的都标记删除
 
 #### 步骤2——是否复用详解
 
@@ -364,12 +390,12 @@ pnpm i -D -w @babel/core @babel/preset-env @babel/plugin-transform-react-jsx
 
 接下来，分情况讨论：
 
-* element是HostText, current fiber是么？
-  * 是， 则复用
-  * 不是， 则新建fiber节点
-* element是其他ReactElement, current fiber是么？
-  * 判断type是否相同， 相同， 则复用， 否则新建一个fiber
-* TODO element是数组或Fragment, current fiber是么？
+- element是HostText, current fiber是么？
+  - 是， 则复用
+  - 不是， 则新建fiber节点
+- element是其他ReactElement, current fiber是么？
+  - 判断type是否相同， 相同， 则复用， 否则新建一个fiber
+- TODO element是数组或Fragment, current fiber是么？
 
 ```txt
 <ul>
@@ -381,7 +407,7 @@ pnpm i -D -w @babel/core @babel/preset-env @babel/plugin-transform-react-jsx
 <ul>
   <li></li>
   <li></li>
-  
+
   <>
   	<li/>
   	<li/>
@@ -397,7 +423,7 @@ pnpm i -D -w @babel/core @babel/preset-env @babel/plugin-transform-react-jsx
 
 A1 B2 C3-> B2 C3 A1
 
-0   1     2         0    1    2 
+0 1 2 0 1 2
 
 当遍历element时，「当前遍历到的element」一定是「所有已遍历的element」中最靠右那个。
 
@@ -406,8 +432,6 @@ A1 B2 C3-> B2 C3 A1
 - 如果接下来遍历到的可复用fiber的index ＜lastPlacedlndex，则标记Placement
 
 - 否则，不标记
-
-  
 
 ##### 移动操作的执行
 
@@ -418,9 +442,9 @@ Placement同时对应：
 
 对于插入操作，之前对应的DOM方法是 parentNode.appendChild，现在为了实现移动操作，需要支持parentNode.insertBefore。
 
-
 parentNode.insertBefore需要找到「目标兄弟Host节点」，要考虑2个因素：
 • 可能并不是目标fiber的直接兄弟节点
+
 ```jsx
 // 情况1
 <A/><B/>
@@ -434,18 +458,20 @@ function App() {
   return <A/>
 }
 ```
+
 • 不稳定的Host节点不能作为「目标兄弟Host节点」
-  * A为Placement节点， 然后B是以A为一句的Placement节点， 则A为不稳定的Host节点
+
+- A为Placement节点， 然后B是以A为一句的Placement节点， 则A为不稳定的Host节点
 
 不足
 • 不支持数组与Fragment
 
-
-
 ## 第十二 实现Fragment
+
 为了提高组件结构灵活性，需要实现Fragment，需要区分几种情況：
 
 1. Fragment包裹其他组件
+
 ```jsx
 <>
   <div></div>
@@ -456,14 +482,13 @@ function App() {
 <div></div>
 <div></div>
 ```
+
 这种情况的JSX转换结果
+
 ```js
 jsxs(Fragment, {
-  children: [
-    jsx("div", {}),
-    jsx("div", {}),
-  ]
-})
+	children: [jsx('div', {}), jsx('div', {})]
+});
 ```
 
 type为Fragment的ReactElement，对单一节点的Diff需要考虑Fragment的情况
@@ -491,34 +516,35 @@ type为Fragment的ReactElement，对单一节点的Diff需要考虑Fragment的�
 ```
 
 对应编译的结果：
+
 ```js
 jsxs('ul', {
-  children: [
-    jsxs(Fragment, {
-      children: [
-        jsx("li", {
-          chilren: '1'
-          }),
-        jsx("li", {
-          chilren: '2'
-        }),
-      ]
-    }),
-    jsx("li", {
-        chilren: '3'
-    }),
-    jsx("li", {
-      chilren: '4'
-    }),
-  ]
-})
+	children: [
+		jsxs(Fragment, {
+			children: [
+				jsx('li', {
+					chilren: '1'
+				}),
+				jsx('li', {
+					chilren: '2'
+				})
+			]
+		}),
+		jsx('li', {
+			chilren: '3'
+		}),
+		jsx('li', {
+			chilren: '4'
+		})
+	]
+});
 ```
-
 
 children为数组类型，则进入reconcileChildrenArray方法，数组中的某一项为Fragment，所以需要增加「type为
 Fragment的ReactElement的判断」，同时beginWork中需要增加Fragment类型的判断。
 
 3. 数组形式的Fragment
+
 ```jsx
 // arr = [<li>c</li>, <li>d</li>]
 <ul>
@@ -535,24 +561,28 @@ Fragment的ReactElement的判断」，同时beginWork中需要增加Fragment类�
   <li>d</li>
 </ul>
 ```
+
 对应编译的结果：
+
 ```js
 jsxs('ul', {
-  children: [
-    jsx("li", {
-        chilren: 'a'
-    }),
-    jsx("li", {
-      chilren: 'b'
-    }),
-    arr
-  ]
-})
+	children: [
+		jsx('li', {
+			chilren: 'a'
+		}),
+		jsx('li', {
+			chilren: 'b'
+		}),
+		arr
+	]
+});
 ```
-children为数组类型，则进入reconcileChildrenArray方法，数组中的某一项为数组，所以需要增加
-'reconcileChildrenArray中数组类型的判断」。
+
+children为数组类型，则进入reconcileChildrenArray方法，数组中的某一项为数组，所以需要增加reconcileChildrenArray中数组类型的判断」。
+
 
 ### Fragment对ChildDeletion的影响
+
 ChildDeletion删除DOM的逻辑：
 • 找到子树的根Host节点
 • 找到子树对应的父级Host节点
@@ -560,17 +590,19 @@ ChildDeletion删除DOM的逻辑：
 
 ```html
 <div>
-  <p>xxx</p>
+	<p>xxx</p>
 </div>
 ```
+
 考虑删除Fragment后，子树的根Host节点可能存在多个：
+
 ```js
 <div>
-  <>
-    <p>xxx</p>
-    <p>yyy</p>
-  </>
+	<>
+		<p>xxx</p>
+		<p>yyy</p>
+	</>
 </div>
 ```
-同
+
 对React的影响
