@@ -605,4 +605,86 @@ ChildDeletion删除DOM的逻辑：
 </div>
 ```
 
-对React的影响
+#### 对React的影响
+需要导出 Fragment 类型， 供babel编译器使用
+
+## lane模型
+第14课 实现同步调度流程
+更新到底是同步还是异步？
+```js
+class App extends React.Component {
+	onclick() {
+		this. setState({a: 1});
+		console.log(this.state.a);
+	}
+}
+```
+
+当前的现状：
+* 从触发更新到render，再到commit都是同步的
+* 多次触发更新会重复多次更新流程
+
+可以改进的地方：多次触发更新，只进行一次更新流程
+「Batched Updates（批处理）」：多次触发更新，只进行一次更新流程
+将多次更新合并为一次，理念上有点类似防抖、节流，我们需要考虑合并的时机是：
+* 宏任务？
+* 微任务？
+用三款框架实现Batched Updates，打印结果不同：
+* React
+* Vue
+* Svelte
+
+结论：React批处理的时机既有宏任务，也有微任务。
+
+本节课我们来实现「微任务的批处理」。
+### 新增调度阶段
+既然我们需要「多次触发更新、只进行一次更新流程」，意味着我们要将更新合并，所以在：
+render阶段, commit阶段的基础上增加schedule阶段（调度阶段）
+
+#### 对update的调整
+「多次触发更新，只进行一次更新流程」中「多次触发更新」总味看对于同一个fiber，会创建多个update：
+```js
+const onclick = () => {
+	// 创建3个update
+	updateCount ((count) => count + 1); 
+	updateCount ((count) => count + 1);
+	updateCount( (count) => count + 1);
+}
+```
+「多次触发更新，只进行一次更新流程」，意味着要达成
+3个目标：
+1. 需要实现一套优先级机制，每个更新都拥有优先级
+2. 需要能够合并一个宏任务/微任务中触发的所有更新
+3. 需要一套算法，用于决定哪个优先级优先进入render阶段
+
+所以， updateQueue 形成一个环状链表的目的是为了保存多个update, 即实现批处理。 
+否则每调用一次dispatchState, 后面的update会把前面的覆盖掉
+
+### 实现目标1:Lane模型
+包括：
+* lane（二进制位，代表优先级）
+* lanes（二进制位，代表lane的集合）
+其中：
+* lane作为update的优先级
+* lanes作为lane的集合
+
+#### lane的产生
+
+对于不同情况触发的更新，产生lane。为后续不同事件产生不同优先级更新做准备。
+如何知道哪些lane被消费，还剩哪些lane没被消费？
+
+对FiberRootNode的改造需要增加如下字段：
+* 代表所有未被消费的lane的集合: pendingLanes
+* 代表本次更新消费的lane: finishedLane
+
+### 实现目标2、3
+需要完成两件事：
+* 实现「某些判断机制」，选出一个lane
+* 实现类似防抖、节流的效果，台并宏/微任务中触发的更新
+
+#### render阶段的改造
+processUpdateQueue方法消费update时需要考虑：
+* lane的因素
+* update现在是一条链表，需要遍历
+
+commit阶段的改造移除「本次更新被消费的lane」
