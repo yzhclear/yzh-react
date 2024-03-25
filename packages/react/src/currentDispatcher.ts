@@ -1,7 +1,9 @@
 import { Action } from 'shared/ReactTypes'
+import {EffectDeps } from 'react-reconciler/src/fiberHooks'
 
 export interface Dispatcher {
-  useState: <T>(initalState: (() => T | T)) => [T, Dispatch<T>]
+  useState: <T>(initalState: (() => T | T)) => [T, Dispatch<T>];
+  useEffect: (callback: () => void | void, deps: EffectDeps) => void;
 }
 
 export type Dispatch<State> = (action: Action<State>) => void

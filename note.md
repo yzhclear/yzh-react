@@ -608,8 +608,8 @@ ChildDeletion删除DOM的逻辑：
 #### 对React的影响
 需要导出 Fragment 类型， 供babel编译器使用
 
-## lane模型
-第14课 实现同步调度流程
+## 14.lane模型
+实现同步调度流程
 更新到底是同步还是异步？
 ```js
 class App extends React.Component {
@@ -688,3 +688,37 @@ processUpdateQueue方法消费update时需要考虑：
 * update现在是一条链表，需要遍历
 
 commit阶段的改造移除「本次更新被消费的lane」
+
+
+## 15 实现Effect
+### effect数据结构
+数据结构需要考虑：
+* 不同effect可以共用同一个机制
+	* useEffect
+	* useLayoutEffect
+	* uselnsertionEffect
+* 需要能保存依赖
+* 需要能保存create回调
+
+* 需要能保存destroy回调
+* 需要能够区分是否需要触发create回调
+	* mount时
+	* 依赖变化时
+
+```js
+const effect = {
+	tag,
+	create,
+	destroy,
+	deps,
+	next,
+}
+```
+
+注意区分本节课新增的3个flag：
+* 对于fiber，新增 PassiveEffect，代表「当前fiber
+本次更新存在副作用」
+* 对于effect hook,Passive代表 useEffect对应effect
+• 对于effect hook, HookHasEffect 代表「当前effect本次更新存在副作用」
+
+同时 为了方便使用，最好和其他effect连接成链表
