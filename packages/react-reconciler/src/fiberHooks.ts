@@ -22,7 +22,7 @@ interface Hook {
 }
 
 
-interface Effect {
+export interface Effect {
 	tag: Flags;
 	create: EffectCallback | void;
 	destroy: EffectCallback | void;
@@ -30,7 +30,7 @@ interface Effect {
 	next: Effect | null
 }
 
-interface FCUpdateQueue<State> extends UpdateQueue<State> {
+export interface FCUpdateQueue<State> extends UpdateQueue<State> {
 	lastEffect: Effect | null
 }
 
@@ -53,8 +53,50 @@ function  mountEffect(create: EffectCallback | void, deps: EffectDeps) {
 
 }
 
-function updateEffect(){
+function updateEffect(create: EffectCallback | void, deps: EffectDeps | void){
+	// 找到当前 useState对应的hook数据
+	const hook = updateWorkInprogressHook()
+	const nextDeps = deps === undefined ? null : deps
+	let destroy: EffectCallback | void
 
+	if (currentHook !== null) {
+		const prevEffect = currentHook.memoizedState as Effect
+		destroy = prevEffect.destroy
+
+		if (nextDeps !== null) {
+			// 浅比较依赖
+			const prevDeps = prevEffect.deps;
+			if (areHookInputsEqual(nextDeps, prevDeps)) {
+				hook.memoizedState = pushEffect(Passive, create, destroy, nextDeps)
+				return
+			}
+		}
+
+		// 浅比较 不相等
+		(currentlyRenderingFiber as FiberNode).flags |= PassiveEffect;
+		hook.memoizedState = pushEffect(
+			Passive | HookHasEffect,
+			create,
+			destroy,
+			nextDeps
+		);
+	}
+	
+}
+
+function areHookInputsEqual(nextDeps: EffectDeps, prevDeps: EffectDeps) {
+	if (nextDeps === null || prevDeps === null) {
+		return false
+	}
+
+	for(let i = 0; i < prevDeps.length && i < nextDeps.length; i++) {
+		if (Object.is(prevDeps[i], nextDeps[i])) {
+			continue
+		}
+		return false
+	}
+
+	return true
 }
 
 function pushEffect(hookFlags: Flags, create: EffectCallback | void, destroy: EffectCallback |  void, deps: EffectDeps): Effect {
@@ -85,7 +127,6 @@ function pushEffect(hookFlags: Flags, create: EffectCallback | void, destroy: Ef
 			updateQueue.lastEffect = effect
 		}
 	}
-
 	return effect
 }
 
@@ -93,6 +134,7 @@ function pushEffect(hookFlags: Flags, create: EffectCallback | void, destroy: Ef
 export function renderWithHooks(wip: FiberNode, lane: Lane) {
 	currentlyRenderingFiber = wip;
 	wip.memoizedState = null; // memoizedState 存的是当前fiberNode的hook链表
+	wip.updateQueue = null // 重置effect链表
 	renderLane = lane
 
 	const current = wip.alternate;

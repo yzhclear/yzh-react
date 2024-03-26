@@ -722,3 +722,33 @@ const effect = {
 • 对于effect hook, HookHasEffect 代表「当前effect本次更新存在副作用」
 
 同时 为了方便使用，最好和其他effect连接成链表
+
+### 实现useEffect
+#### 调度副作用
+调度需要使用Scheduler（调度器），调度器也属于React
+项目下的模块。在本课程中，我们不会实现调度器，但会教如何使用它。
+```shell
+pnpm i -w scheduler
+pnpm i -D -w @types/scheduler
+```
+#### 收集回调
+回调包括两类：
+* create回调
+* destroy回调
+
+这意味着我们需要收集两类回调：
+* unmout时执行的destroy回调
+* update时执行的create回调
+
+#### 执行副作用
+本次更新的任何create回调都必须在所有上一次更新的destroy回调执行完后再执行。
+整体执行流程包括： 
+1. 遍历effect
+2. 首先触发所有unmount effect，且对于某个fiber，如果触发了unmount destroy，本次更新不会再触发 update create
+3. 触发所有上次更新的destroy
+4. 触发所有这次更新的create
+
+
+#### mount、 update时的区别
+* mount: 一定标记PassiveEffect
+* update时：deps变化时标记PassiveEffect
