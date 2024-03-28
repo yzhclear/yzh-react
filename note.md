@@ -849,4 +849,23 @@ function Child() {
 	return 'Child'
 }
 ```
-经由Noop-Renderer渲染后得到的树状结构如下
+经由Noop-Renderer渲染后得到的树状结构
+
+
+#### 完善Reconciler测试环境
+需要思考的问题：如何在并发环境测试运行结果？比如：
+* 如何控制异步执行的时间？使用 mock timer
+* 如何记录并发情况下预期的执行顺序？
+完善井发测试环境
+安装并发的测试上下文环境：
+```shell
+pnpm i -D -w jest-react
+```
+安装matchers
+* reactTestMatchers.js
+
+
+#### 当前为测试做的准备
+* 针对ReactDOM宿主环境：ReactTestUtils
+* 针对Reconciler的测试：React-Noop-Renderer
+* 针对并发环境的测试：jest-react、Scheduler、React-Noop-Renderer配合使用
