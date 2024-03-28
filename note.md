@@ -580,7 +580,6 @@ jsxs('ul', {
 
 children为数组类型，则进入reconcileChildrenArray方法，数组中的某一项为数组，所以需要增加reconcileChildrenArray中数组类型的判断」。
 
-
 ### Fragment对ChildDeletion的影响
 
 ChildDeletion删除DOM的逻辑：
@@ -606,67 +605,80 @@ ChildDeletion删除DOM的逻辑：
 ```
 
 #### 对React的影响
+
 需要导出 Fragment 类型， 供babel编译器使用
 
 ## 14.lane模型
+
 实现同步调度流程
 更新到底是同步还是异步？
+
 ```js
 class App extends React.Component {
 	onclick() {
-		this. setState({a: 1});
+		this.setState({ a: 1 });
 		console.log(this.state.a);
 	}
 }
 ```
 
 当前的现状：
-* 从触发更新到render，再到commit都是同步的
-* 多次触发更新会重复多次更新流程
+
+- 从触发更新到render，再到commit都是同步的
+- 多次触发更新会重复多次更新流程
 
 可以改进的地方：多次触发更新，只进行一次更新流程
 「Batched Updates（批处理）」：多次触发更新，只进行一次更新流程
 将多次更新合并为一次，理念上有点类似防抖、节流，我们需要考虑合并的时机是：
-* 宏任务？
-* 微任务？
-用三款框架实现Batched Updates，打印结果不同：
-* React
-* Vue
-* Svelte
+
+- 宏任务？
+- 微任务？
+  用三款框架实现Batched Updates，打印结果不同：
+- React
+- Vue
+- Svelte
 
 结论：React批处理的时机既有宏任务，也有微任务。
 
 本节课我们来实现「微任务的批处理」。
+
 ### 新增调度阶段
+
 既然我们需要「多次触发更新、只进行一次更新流程」，意味着我们要将更新合并，所以在：
 render阶段, commit阶段的基础上增加schedule阶段（调度阶段）
 
 #### 对update的调整
+
 「多次触发更新，只进行一次更新流程」中「多次触发更新」总味看对于同一个fiber，会创建多个update：
+
 ```js
 const onclick = () => {
 	// 创建3个update
-	updateCount ((count) => count + 1); 
-	updateCount ((count) => count + 1);
-	updateCount( (count) => count + 1);
-}
+	updateCount((count) => count + 1);
+	updateCount((count) => count + 1);
+	updateCount((count) => count + 1);
+};
 ```
+
 「多次触发更新，只进行一次更新流程」，意味着要达成
 3个目标：
+
 1. 需要实现一套优先级机制，每个更新都拥有优先级
 2. 需要能够合并一个宏任务/微任务中触发的所有更新
 3. 需要一套算法，用于决定哪个优先级优先进入render阶段
 
-所以， updateQueue 形成一个环状链表的目的是为了保存多个update, 即实现批处理。 
+所以， updateQueue 形成一个环状链表的目的是为了保存多个update, 即实现批处理。
 否则每调用一次dispatchState, 后面的update会把前面的覆盖掉
 
 ### 实现目标1:Lane模型
+
 包括：
-* lane（二进制位，代表优先级）
-* lanes（二进制位，代表lane的集合）
-其中：
-* lane作为update的优先级
-* lanes作为lane的集合
+
+- lane（二进制位，代表优先级）
+- lanes（二进制位，代表lane的集合）
+  其中：
+- lane作为update的优先级
+- lanes作为lane的集合
 
 #### lane的产生
 
@@ -674,36 +686,43 @@ const onclick = () => {
 如何知道哪些lane被消费，还剩哪些lane没被消费？
 
 对FiberRootNode的改造需要增加如下字段：
-* 代表所有未被消费的lane的集合: pendingLanes
-* 代表本次更新消费的lane: finishedLane
+
+- 代表所有未被消费的lane的集合: pendingLanes
+- 代表本次更新消费的lane: finishedLane
 
 ### 实现目标2、3
+
 需要完成两件事：
-* 实现「某些判断机制」，选出一个lane
-* 实现类似防抖、节流的效果，台并宏/微任务中触发的更新
+
+- 实现「某些判断机制」，选出一个lane
+- 实现类似防抖、节流的效果，台并宏/微任务中触发的更新
 
 #### render阶段的改造
+
 processUpdateQueue方法消费update时需要考虑：
-* lane的因素
-* update现在是一条链表，需要遍历
+
+- lane的因素
+- update现在是一条链表，需要遍历
 
 commit阶段的改造移除「本次更新被消费的lane」
 
-
 ## 15 实现Effect
-### effect数据结构
-数据结构需要考虑：
-* 不同effect可以共用同一个机制
-	* useEffect
-	* useLayoutEffect
-	* uselnsertionEffect
-* 需要能保存依赖
-* 需要能保存create回调
 
-* 需要能保存destroy回调
-* 需要能够区分是否需要触发create回调
-	* mount时
-	* 依赖变化时
+### effect数据结构
+
+数据结构需要考虑：
+
+- 不同effect可以共用同一个机制
+  - useEffect
+  - useLayoutEffect
+  - uselnsertionEffect
+- 需要能保存依赖
+- 需要能保存create回调
+
+- 需要能保存destroy回调
+- 需要能够区分是否需要触发create回调
+  - mount时
+  - 依赖变化时
 
 ```js
 const effect = {
@@ -711,44 +730,123 @@ const effect = {
 	create,
 	destroy,
 	deps,
-	next,
-}
+	next
+};
 ```
 
 注意区分本节课新增的3个flag：
-* 对于fiber，新增 PassiveEffect，代表「当前fiber
-本次更新存在副作用」
-* 对于effect hook,Passive代表 useEffect对应effect
-• 对于effect hook, HookHasEffect 代表「当前effect本次更新存在副作用」
+
+- 对于fiber，新增 PassiveEffect，代表「当前fiber
+  本次更新存在副作用」
+- 对于effect hook,Passive代表 useEffect对应effect
+  • 对于effect hook, HookHasEffect 代表「当前effect本次更新存在副作用」
 
 同时 为了方便使用，最好和其他effect连接成链表
 
 ### 实现useEffect
+
 #### 调度副作用
+
 调度需要使用Scheduler（调度器），调度器也属于React
 项目下的模块。在本课程中，我们不会实现调度器，但会教如何使用它。
+
 ```shell
 pnpm i -w scheduler
 pnpm i -D -w @types/scheduler
 ```
+
 #### 收集回调
+
 回调包括两类：
-* create回调
-* destroy回调
+
+- create回调
+- destroy回调
 
 这意味着我们需要收集两类回调：
-* unmout时执行的destroy回调
-* update时执行的create回调
+
+- unmout时执行的destroy回调
+- update时执行的create回调
 
 #### 执行副作用
+
 本次更新的任何create回调都必须在所有上一次更新的destroy回调执行完后再执行。
-整体执行流程包括： 
+整体执行流程包括：
+
 1. 遍历effect
 2. 首先触发所有unmount effect，且对于某个fiber，如果触发了unmount destroy，本次更新不会再触发 update create
 3. 触发所有上次更新的destroy
 4. 触发所有这次更新的create
 
-
 #### mount、 update时的区别
-* mount: 一定标记PassiveEffect
-* update时：deps变化时标记PassiveEffect
+
+- mount: 一定标记PassiveEffect
+- update时：deps变化时标记PassiveEffect
+
+## 第16课 实现noop-renderer
+
+到目前为止我们实现的模块：
+• 核心模块：Reconciler
+• 公用方法：React
+• 浏览器宿主环境：ReactDOM
+当前项目的问题：测试用例太单薄，无法照顾到项目的边界情况，但课程时长有限，无法覆盖所有用例解决办法：构建成熟的React测试环境，实现测试工具，按需跑通用例.
+
+为了测试Reconciler，我们需要构建「宿主环境无关的渲染器」，这就是react-noop-renderer
+创建packages/react-reconciler/src/_tests_/ReactEffectOrdering-test.js
+
+
+
+
+Noop-Renderer包括两部分：
+
+- hostConfig
+- 工厂函数（类似ReactDOM）
+
+在ReactDOM宿主环境的原生节点是DOM节点，在Noop-Renderer宿主环境包括三类节点：
+
+- Instance（HostComponent）
+
+```js
+const instance = {
+	id: instanceCounter++,
+	type: type,
+	children: [],
+	parent: -1,
+	props
+};
+```
+
+- Textinstance (HostText)
+
+```js
+const textInstance = {
+	text: content,
+	id: instanceCounter++,
+	parent: -1
+};
+```
+
+* Container (HostRoot)
+```js
+const textInstance = {
+	id: idCounter++,
+	children: [],
+};
+```
+
+
+对于如下组件：
+```js
+function App() {
+	return (
+		<>
+			<Child />
+			<div>hello world</div>
+		</>
+	)
+}
+
+function Child() {
+	return 'Child'
+}
+```
+经由Noop-Renderer渲染后得到的树状结构如下

@@ -14,7 +14,7 @@ export const createInstance = (type: string, props: Props) => {
 	return element as DOMElement;
 };
 
-export const appendInitalChild = (
+export const appendInitialChild = (
 	parent: Container | Instance,
 	child: Instance
 ) => {
@@ -31,7 +31,11 @@ export const commitUpdate = (fiber: FiberNode) => {
 			const text = fiber.memoizedProps.content;
 			return commitTextUpdate(fiber.stateNode, text);
 		case HostComponent:
-		// TODO
+			return updateFiberProps(fiber.stateNode, fiber.memoizedProps)
+		default:
+			if (__DEV__) {
+				console.warn('未实现的Update类型')
+			}
 	}
 };
 
@@ -54,7 +58,7 @@ export function insertChildToContainer(
 	container.insertBefore(child, before);
 }
 
-export const appendChildToContainer = appendInitalChild;
+export const appendChildToContainer = appendInitialChild;
 
 export const scheduleMicroTask =
 	typeof queueMicrotask === 'function'

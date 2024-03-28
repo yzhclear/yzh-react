@@ -123,41 +123,41 @@ function commitHookEffectList(
 	lastEffect: Effect,
 	callback: (effect: Effect) => void
 ) {
-	let effect = lastEffect.next as Effect
+	let effect = lastEffect.next as Effect;
 	do {
 		if ((effect.tag & flags) === flags) {
-			callback(effect)
+			callback(effect);
 		}
-		effect = effect.next as Effect
+		effect = effect.next as Effect;
 	} while (effect !== lastEffect.next);
 }
 
 export function commitHookEffectListUnmount(flags: Flags, lastEffect: Effect) {
 	commitHookEffectList(flags, lastEffect, (effect) => {
-		const destroy = effect.destroy
+		const destroy = effect.destroy;
 		if (typeof destroy === 'function') {
-			destroy()
+			destroy();
 		}
-		effect.tag &= ~HookHasEffect
-	})
+		effect.tag &= ~HookHasEffect;
+	});
 }
 
 export function commitHookEffectListDestroy(flags: Flags, lastEffect: Effect) {
 	commitHookEffectList(flags, lastEffect, (effect) => {
-		const destroy = effect.destroy
+		const destroy = effect.destroy;
 		if (typeof destroy === 'function') {
-			destroy()
+			destroy();
 		}
-	})
+	});
 }
 
 export function commitHookEffectListCreate(flags: Flags, lastEffect: Effect) {
 	commitHookEffectList(flags, lastEffect, (effect) => {
-		const create = effect.create
+		const create = effect.create;
 		if (typeof create === 'function') {
-			effect.destroy = create()
+			effect.destroy = create();
 		}
-	})
+	});
 }
 
 function recordHostChildrenToDelete(
