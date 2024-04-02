@@ -869,3 +869,58 @@ pnpm i -D -w jest-react
 * 针对ReactDOM宿主环境：ReactTestUtils
 * 针对Reconciler的测试：React-Noop-Renderer
 * 针对并发环境的测试：jest-react、Scheduler、React-Noop-Renderer配合使用
+
+## 第17课 并发更新的原理
+本节课对标《React设计原理》5.1节。
+思考一个问题：我们当前的实现是如何驱动的？
+1. 交互触发更新
+2. 调度阶段微任务调度（ensureRootlsScheduled方法）
+3. 微任务调度结束，进入render阶段
+4. render阶段结束，进入commit阶段
+5. commit阶段结束，调度阶段微任务调度（ensureRootlsScheduled方法）
+
+整体是个大的微任务循环，循环的驱动力是「微任务调度模块」。
+
+
+并发更新的理论基础
+**时间切片**
+
+### 改造示例
+如果我们想在宏任务中完成任务调度，本质上是个大的宏任务循环，循环的驱动力是Scheduler。
+理论基础参考《React设计原理》
+在微任务调度中，没有「优先级」的概念，对于Scheduler存在5种优先级：
+•ImmediatePriority
+•UserBlockingPriority
+•NormalPriority
+• LowPriority
+•IdlePriority
+
+需要考虑的情况：
+
+### 工作过程仅有一个work
+如果仅有一个work，Scheduler有个优化路径：如果调度的回调函数的返回值是函数，则会继续调度返回的函数。
+### 工作过程中产生相同优先级的work
+如果优先级相同，则不需要开启新的调度。
+### 工作过程中产生更高/低优先级的work
+把握一个原则：我们每次选出的都是优先级最高的work。
+
+
+## 第18课 实现并发更新
+需要做的改动
+• Lane模型增加更多优先级
+• 交互与优先级对应
+• 调度阶段引入Scheduler，新增调度策略逻辑
+• render阶段可中断
+• 根据update计算state的算法需要修改
+扩展交互
+思考一个问题：优先级从何而来？
+答案：不同交互对应不同优先级。
+可以根据「触发更新的上下文环境」赋予不同优先级。比如：
+• 点击事件需要同步处理
+• 滚动事件优先级再低点
+•
+••
+更进一步，还能推广到任何「可以触发更新的上下文环境」，比如：
+• useEffect create回调中触发更新的优先级
+同
+• 首屏渲染的优先级
