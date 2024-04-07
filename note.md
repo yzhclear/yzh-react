@@ -942,4 +942,17 @@ pnpm i -D -w jest-react
 • render阶段变为「可中断」
 
 梳理两种典型场景：
-•时间切片
+• 时间切片
+• 高优先级打断低优先级
+
+### 扩展state计算机制
+扩展「根据lane对应updateit算state」的机制，主要包括：
+• 通过update计算state时可以跳过「优先级不够的updatej
+• 由于「高优先级任务打断低优先级任务」，同一个组件中「根据update计算state』的流程可能会多次执行，所以需要保存update
+
+### 跳过update需要考虑的问题
+如何比较「优先级是否足够」？
+
+lane数值大小的直接比较不够灵活。
+
+如何同时兼顾「update的连续性」与「update的优先级」？
