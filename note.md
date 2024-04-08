@@ -956,3 +956,89 @@ pnpm i -D -w jest-react
 lane数值大小的直接比较不够灵活。
 
 如何同时兼顾「update的连续性」与「update的优先级」？
+
+新增baseState、baseQueue字段：
+• baseState是本次更新参与计算的初始state，memoizedState是上次更新计算的最终state
+• 如果本次更新没有update被跳过，则下次更新开始时
+baseState === memoizedState
+• 如果本次更新有update被跳过，则本次更新计算出的memoizedState为「考虑优先级」情况下计算的结果，baseState为「最后一个没被跳过的update计算后的结果」，下次更新开始时baseState ！== memoizedState
+• 本次更新「被跳过的update及其后面的所有update』都会被保存在baseQueue中参与下次state计f算
+• 本次更新「参与计算但保存在baseQueue中的update」，优先级会降低到NoLane
+
+```javascript
+// u0
+{
+	action: num => num +1 ,
+	Lane: DefaultLane
+}
+// u1
+{
+	action: 3,
+	Lane: Synclane
+}
+// u2
+{
+	action: num => num + 10, 
+	lane: DefaultLane
+}
+/*
+第一次render
+* baseState = 0; memoizedState = 0;
+* baseQueue = null; updateLane = Default
+* 第一次render 第一次计算
+* baseState = 1; memoizedState = 1;
+* baseQueue = null;
+* 第一次render 第二次计算
+* baseState = 1; memoizedState = 1;
+* baseQueue = u1;
+* 第一次render 第三次计算
+* baseState = 1; memoizedState = 11;
+* baseQueue = u1 -> u2(NoLane)
+/
+
+/**
+ * 第二次render
+ * baseState = 1; memoizedState = 11;
+ * baseQueue = u1 -> u2(NoLane); updateLane = SyncLane
+ * 第二次render 第一次计算
+ * baseState = 3; memoizedState = 3;
+ * 第一次render 第二次计算
+ * baseState = 13; memoizedState = 13;
+ */
+```
+
+### 保存update的问题
+考虑将update保存在current中。只要不进入commit阶段，current与wip不会互换，所以保存在current中，即使多次执行render阶段，只要不进入commit阶段，都能从current中恢复数据。 
+
+
+TODO：扩展renderLane的灵活性，将其扩展为
+renderLanes，更好利用Lanes这一数据机构能够表示多种lane的集合的能力。
+
+## 第19课 实现useTransition
+当前我们的并发策略是：默认启用并发更新。
+修改并发策略为：
+• 默认启用同步更新
+• 使用并发特性后的那次更新启用并发更新
+「默认启用同步更新」需要修改的地方：
+•mount时的更新优先级
+useTransition的作用
+执行过渡效果时（假设从U!a过渡到UI b），通常处理透
+辑包括3个状态：
+• 初始情况是Ul a
+• 开启过渡后，显示过波中（比如loading）效果
+• 过渡完成后切换到UIb
+传统「过渡中」效果的弊端：
+• 时间比较短时，「过渡中效果」可能比较生硬
+•「加载过程阻塞UI」也会带来不好的UX
+useTransition就是为了解决这个问题，他的作用是：
+UI时，先显示旧的UI，待新的UI加载完成后再显示新的
+
+### 实现useTransition
+useTransition的作用翻译成源码木语：
+• 切换UI->触发更新
+• 先显示旧的UI，待新的UI加载完成后再显示新的UI->「切换新UI」对应低优先级更新
+
+**实现的要点**：
+1. 实现基础hook工作流程
+2. 实现Transition优先级
+3. useTransition的实现细节

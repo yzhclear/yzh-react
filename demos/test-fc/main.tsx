@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 // import ReactDOM from 'react-dom/client';
-import ReactDOM from 'react-noop-renderer';
+// import ReactDOM from 'react-noop-renderer';
+import ReactDOM from 'react-dom/client';
+
 
 
 // function App() {
@@ -116,20 +118,28 @@ import ReactDOM from 'react-noop-renderer';
 // }
 
 function App() {
+	const [num, setNum] = useState(100)
+
 	return (
-		<>
-			<Child />
-			<div>hello world</div>
-		</>
+		<ul onClick={() => setNum(50)}>
+			{
+				new Array(num).fill(0).map((_, i) => {
+					return <Child key={i}>{i}</Child>
+				})
+			}
+		</ul>
 	)
 }
-
-function Child() {
-	return 'Child'
+ 
+function Child({children}) {
+	const now = performance.now()
+	while(performance.now() - now < 4) {}
+	return <li>{children}</li>
 }
 
-// ReactDOM.createRoot(document.getElementById('root')!).render(<App />);
-window.root = ReactDOM.createRoot()
-root.render(<App />);
+ReactDOM.createRoot(document.getElementById('root')!).render(<App />);
+
+// window.root = ReactDOM.createRoot()
+// root.render(<App />);
 
 
