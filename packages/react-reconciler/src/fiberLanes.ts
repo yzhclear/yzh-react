@@ -1,14 +1,16 @@
 import { unstable_IdlePriority, unstable_ImmediatePriority, unstable_NormalPriority, unstable_UserBlockingPriority, unstable_getCurrentPriorityLevel } from 'scheduler';
 import { FiberRootNode } from './fiber';
+import ReactCurrentBatchConfig from 'react/src/currentBatchConfig';
 
 export type Lane = number;
 export type Lanes = number;
 
-export const SyncLane = 0b0001;
-export const NoLane = 0b0000;
-export const InputContinuousLane = 0b0010;
-export const DefaultLane = 0b0100;
-export const IdleLane = 0b1000;
+export const SyncLane = 0b00001;
+export const NoLane = 0b00000;
+export const InputContinuousLane = 0b00010;
+export const DefaultLane = 0b00100;
+export const TransitionLane = 0b01000
+export const IdleLane = 0b10000;
 
 export const NoLanes = 0b0000;
 
@@ -17,6 +19,11 @@ export function mergeLanes(laneA: Lane, laneB: Lane): Lanes {
 }
 
 export function requestUpdateLane() {
+  const isTransition = ReactCurrentBatchConfig.transition !== null;
+	if (isTransition) {
+		return TransitionLane;
+	}
+  
 	// 当有一个update时，Scheduler 当前的优先级就会被指定为这个update优先级
 	// 从上下文环境中获取Scheduler优先级， 然后再转换成lane
   const currentSchedulerPriority = unstable_getCurrentPriorityLevel()

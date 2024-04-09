@@ -4,11 +4,12 @@ import {EffectDeps } from 'react-reconciler/src/fiberHooks'
 export interface Dispatcher {
   useState: <T>(initalState: (() => T | T)) => [T, Dispatch<T>];
   useEffect: (callback: () => void | void, deps: EffectDeps) => void;
+  useTransition: () => [boolean, (callback: () => void) => void]
 }
 
 export type Dispatch<State> = (action: Action<State>) => void
 
-export const currentDispatcher: {current: Dispatcher | null} = {
+const currentDispatcher: {current: Dispatcher | null} = {
   current: null
 }
 
@@ -22,3 +23,5 @@ export function resolveDispatcher(): Dispatcher {
   
   return dispatcher
 }
+
+export default currentDispatcher

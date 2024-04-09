@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-// import ReactDOM from 'react-dom/client';
-// import ReactDOM from 'react-noop-renderer';
 import ReactDOM from 'react-dom/client';
+// import ReactDOM from 'react-noop-renderer';
+
+import App1 from './AppUseTransition'
 
 
 
@@ -137,7 +138,7 @@ function Child({children}) {
 	return <li>{children}</li>
 }
 
-ReactDOM.createRoot(document.getElementById('root')!).render(<App />);
+ReactDOM.createRoot(document.getElementById('root')!).render(<App1 />);
 
 // window.root = ReactDOM.createRoot()
 // root.render(<App />);

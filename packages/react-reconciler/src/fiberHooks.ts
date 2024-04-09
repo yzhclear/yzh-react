@@ -20,7 +20,7 @@ let workInprogressHook: Hook | null = null;
 let currentHook: Hook | null = null;
 let renderLane: Lane = NoLane;
 
-const { currentDispatcher } = internals;
+const { currentDispatcher, currentBatchConfig } = internals;
 
 interface Hook {
 	memoizedState: any;
@@ -175,11 +175,13 @@ export function renderWithHooks(wip: FiberNode, lane: Lane) {
 
 const HooksDispatcherOnMount: Dispatcher = {
 	useState: mountState,
-	useEffect: mountEffect
+	useEffect: mountEffect,
+	useTransition: mountTranstion,
 };
 const HooksDispatcherOnUpdate: Dispatcher = {
 	useState: updateState,
-	useEffect: updateEffect
+	useEffect: updateEffect,
+	useTransition: updateTranstion
 };
 
 function updateState<State>(): [State, Dispatch<State>] {
@@ -333,4 +335,30 @@ function mountWorkInProgressHook(): Hook {
 	}
 
 	return hook;
+}
+
+function mountTranstion(): [boolean, (callback: () => void) => void] {
+	const [isPending, setPending] = mountState(false)
+	const hook = mountWorkInProgressHook()
+	const start = startTransition.bind(null, setPending)
+	hook.memoizedState = start
+	return [isPending, start]
+
+}
+function updateTranstion(): [boolean, (callback: () => void) => void] {
+	const [isPending] = updateState();
+	const hook = updateWorkInprogressHook()
+	const start = hook.memoizedState;
+	return [isPending as boolean, start];
+}
+
+function startTransition(setPending: Dispatch<boolean>, callback: () => void) {
+	setPending(true)
+	const prevTransition = currentBatchConfig.transition
+	currentBatchConfig.transition = 1
+
+	callback()
+	setPending(false)
+
+	currentBatchConfig.transition= prevTransition
 }

@@ -91,9 +91,6 @@ function ensureRootIsScheduled(root: FiberRootNode) {
 
 	if (updateLane === SyncLane) {
 		// 同步优先级， 用微任务调度
-		if (__DEV__) {
-			console.warn('在微任务中调度， 优先级：', updateLane);
-		}
 		scheduleSyncCallback(performSyncWorkOnRoot.bind(null, root));
 		scheduleMicroTask(flushSyncCallbacks);
 	} else {
